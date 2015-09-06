@@ -41,12 +41,19 @@
 #include <unistd.h>
 
 static int intercepting;
+/* copies of certain paths and their real paths */
 static const char *env_tmpdir;
 static const char *env_tcbase;
 static const char *env_prjbase;
+static const char *env_tmpdir_rp;
+static const char *env_tcbase_rp;
+static const char *env_prjbase_rp;
 static int tmpdir_len;
 static int tcbase_len;
 static int prjbase_len;
+static int tmpdir_rp_len;
+static int tcbase_rp_len;
+static int prjbase_rp_len;
 
 enum ev_type {
 	/* handled syscalls */
@@ -70,7 +77,7 @@ const char *syscall_names[EV_T_NUM] = {
 
 void *orig_syscalls[EV_T_NUM];
 
-static char prog_full_path[256];
+static char prog_full_path[PATH_MAX];
 static char *prog_name;
 static int  prog_name_len;
 
@@ -141,10 +148,19 @@ static int is_path_ok(const char *path)
 	if (is_under(path, env_tmpdir, tmpdir_len))
 		return 1;
 
+	if (is_under(path, env_tmpdir_rp, tmpdir_rp_len))
+		return 1;
+
 	if (is_under(path, env_tcbase, tcbase_len))
 		return 1;
 
+	if (is_under(path, env_tcbase_rp, tcbase_rp_len))
+		return 1;
+
 	if (is_under(path, env_prjbase, prjbase_len))
+		return 1;
+
+	if (is_under(path, env_prjbase_rp, prjbase_rp_len))
 		return 1;
 
 	if (env_prjbase && env_tcbase)
@@ -283,9 +299,18 @@ static void nousr_prepare()
 		orig_syscalls[i] = dlsym(RTLD_NEXT, syscall_names[i]);
 
 	/* get some environment variables and the program's name and path */
-	env_tmpdir  = get_path_env("TMPDIR",  &tmpdir_len);
-	env_tcbase  = get_path_env("NOUSR_TCBASE",  &tcbase_len);
-	env_prjbase = get_path_env("NOUSR_PRJBASE", &prjbase_len);
+	env_tmpdir     = get_path_env("TMPDIR",        &tmpdir_len);
+	env_tcbase     = get_path_env("NOUSR_TCBASE",  &tcbase_len);
+	env_prjbase    = get_path_env("NOUSR_PRJBASE", &prjbase_len);
+
+	env_tmpdir_rp  = env_tmpdir  ? realpath(env_tmpdir, NULL)  : NULL;
+	env_tcbase_rp  = env_tcbase  ? realpath(env_tcbase, NULL)  : NULL;
+	env_prjbase_rp = env_prjbase ? realpath(env_prjbase, NULL) : NULL;
+
+	tmpdir_rp_len  = env_tmpdir_rp  ? strlen(env_tmpdir_rp)  : 0;
+	tcbase_rp_len  = env_tcbase_rp  ? strlen(env_tcbase_rp)  : 0;
+	prjbase_rp_len = env_prjbase_rp ? strlen(env_prjbase_rp) : 0;
+
 	get_prog_name();
 
 	/* decide whether we want to apply the filtering or not.
@@ -293,7 +318,8 @@ static void nousr_prepare()
 	 * with TCBASE. Otherwise we only apply it if the path doesn't start
 	 * with /usr.
 	 */
-	if (env_tcbase && !is_under(prog_full_path, env_tcbase, tcbase_len))
+	if (env_tcbase && !is_under(prog_full_path, env_tcbase, tcbase_len) &&
+	    (!env_tcbase_rp || !is_under(prog_full_path, env_tcbase_rp, tcbase_rp_len)))
 		return;
 
 	if (!env_tcbase && is_under(prog_full_path, "/usr", 4))
