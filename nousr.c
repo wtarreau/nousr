@@ -132,23 +132,18 @@ static const char *get_path_env(const char *name, int *len)
 }
 
 /* returns true if access to <path> is possible according to the rules below :
- *   - /tmp is always permitted
+ *   - allow relative paths not starting with a '/' in their path
+ *   - /dev and /tmp are always permitted
  *   - TMPDIR, if set, is always permitted
  *   - PRJBASE, if set, is always permitted
  *   - TCBASE, if set, is always permitted
- *   - if both TCBASE and PRJDIR are set, deny anything else
  *   - deny /usr
+ *   - if both TCBASE and PRJDIR are set, deny anything else
  *   - allow anything else
  */
 static int is_path_ok(const char *path)
 {
-	if (is_under(path, "/tmp", 4))
-		return 1;
-
-	if (is_under(path, env_tmpdir, tmpdir_len))
-		return 1;
-
-	if (is_under(path, env_tmpdir_rp, tmpdir_rp_len))
+	if (*path != '/')
 		return 1;
 
 	if (is_under(path, env_tcbase, tcbase_len))
@@ -163,13 +158,25 @@ static int is_path_ok(const char *path)
 	if (is_under(path, env_prjbase_rp, prjbase_rp_len))
 		return 1;
 
-	if (env_prjbase && env_tcbase)
-		return 0;
+	if (is_under(path, env_tmpdir, tmpdir_len))
+		return 1;
+
+	if (is_under(path, env_tmpdir_rp, tmpdir_rp_len))
+		return 1;
 
 	if (is_under(path, "/usr", 4))
 		return 0;
 
-	return 1;
+	if (!env_prjbase || !env_tcbase)
+		return 1;
+
+	if (is_under(path, "/dev", 4))
+		return 1;
+
+	if (is_under(path, "/tmp", 4))
+		return 1;
+
+	return 0;
 }
 
 
