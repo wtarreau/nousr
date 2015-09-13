@@ -63,6 +63,20 @@ Examples :
   joe:/usr/src/project$
 
 
+Nousr may also be used as an executable wrapper. In this mode, it simply updates
+LD_PRELOAD to point to itself, then executes the executables and arguments from
+the command line. It may only be convenient for top-level commands. Example :
+
+  joe:/project$ nousr.so make world
+  FATAL: nousr: program 'i586-linux-gcc' attempted to access '/usr/include/pcre.h' using access().
+       | full path to program             : /tc/i586-linux/bin/i586-linux-gcc
+       | working directory at call        : /project/src
+       | path to project (NOUSR_PRJBASE)  : [anything not under /usr]
+       | path to toolchain (NOUSR_TCBASE) : [anything not under /usr]
+  make: *** [clean] Error 127
+  joe:/project$
+
+
 Points of care :
   - only a few libc calls are intercepted, programs involving other calls will
     not be properly intercepted, just like statically built programs. The lack

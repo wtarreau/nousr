@@ -353,3 +353,51 @@ static void nousr_prepare()
 		intercepting = 1;
 	}
 }
+
+/* Called in wrapper mode */
+int main(int argc, char **argv)
+{
+	char *preload;
+	int plen;
+
+	/* disable interception that could have been setup by nousr_prepare() */
+	intercepting = 0;
+
+	if (argc < 2) {
+		fprintf(stderr,
+			"Usage: <%s> [cmd [args...]]\n"
+			"       Will install itself in LD_PRELOAD before calling <cmd> with args.\n",
+			argv[0]);
+		exit(1);
+	}
+
+	argc--;
+	argv++;
+
+	/* now we'll concatenate ourselves at the end of the LD_PRELOAD variable */
+	plen = strlen(prog_full_path);
+	preload = getenv("LD_PRELOAD");
+	if (preload) {
+		int olen = strlen(preload);
+		preload = realloc(preload, olen + 1 + plen + 1);
+		if (!preload) {
+			perror("realloc");
+			exit(2);
+		}
+		preload[olen] = ' ';
+		memcpy(preload + olen + 1, prog_full_path, plen);
+		preload[olen + 1 + plen] = 0;
+	}
+	else {
+		preload = prog_full_path;
+	}
+
+	if (setenv("LD_PRELOAD", preload, 1) < 0) {
+		perror("setenv");
+		exit(2);
+	}
+
+	execvp(*argv, argv);
+	perror("execve");
+	exit(2);
+}

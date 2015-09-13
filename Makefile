@@ -1,5 +1,5 @@
-CFLAGS  = -O3 -fPIC
-LDFLAGS = -shared -fPIC
+CFLAGS  = -O3 -fPIE
+LDFLAGS = -pie -fPIE
 
 all: nousr.so
 
