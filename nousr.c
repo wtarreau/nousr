@@ -42,6 +42,7 @@
 
 static int intercepting;
 /* copies of certain paths and their real paths */
+static const char *env_strict;
 static const char *env_tmpdir;
 static const char *env_tcbase;
 static const char *env_prjbase;
@@ -167,7 +168,7 @@ static int is_path_ok(const char *path)
 	if (is_under(path, "/usr", 4))
 		return 0;
 
-	if (!env_prjbase || !env_tcbase)
+	if (!env_strict || !env_prjbase || !env_tcbase)
 		return 1;
 
 	if (is_under(path, "/dev", 4))
@@ -306,6 +307,7 @@ static void nousr_prepare()
 		orig_syscalls[i] = dlsym(RTLD_NEXT, syscall_names[i]);
 
 	/* get some environment variables and the program's name and path */
+	env_strict     = getenv("NOUSR_STRICT");
 	env_tmpdir     = get_path_env("TMPDIR",        &tmpdir_len);
 	env_tcbase     = get_path_env("NOUSR_TCBASE",  &tcbase_len);
 	env_prjbase    = get_path_env("NOUSR_PRJBASE", &prjbase_len);
