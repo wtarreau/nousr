@@ -383,9 +383,21 @@ int main(int argc, char **argv)
 
 	if (argc < 2) {
 		fprintf(stderr,
+			"nousr - simple guard against accidental use of /usr by toolchains\n"
 			"Usage: <%s> [cmd [args...]]\n"
-			"       Will install itself in LD_PRELOAD before calling <cmd> with args.\n",
-			argv[0]);
+			"       Will install itself in LD_PRELOAD before calling <cmd> with args.\n"
+			"\n"
+			"Other variables of interest :\n"
+			"  - NOUSR_TRACE (1|2) : trace intercepted or all programs [%s]\n"
+			"  - NOUSR_PRJBASE     : allow project sources to be there [%s]\n"
+			"  - NOUSR_TCBASE      : only consider toolchain there [%s]\n"
+			"  - NOUSR_STRICT      : only allow access to project sources and toolchain [%s]\n"
+			"",
+			argv[0],
+			env_trace ? env_trace : "not set",
+			env_prjbase ? env_prjbase : "not set",
+			env_tcbase ? env_tcbase : "not set",
+			env_strict ? "set" : "not set");
 		exit(1);
 	}
 

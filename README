@@ -1,4 +1,4 @@
-nousr - simple guard against accidental use of /usr within loolchains
+nousr - simple guard against accidental use of /usr by toolchains
 
 Many projects are not designed to be cross-compiled, and tend to call tools
 on the local system believing to guess right where to find certain libs. Calls
