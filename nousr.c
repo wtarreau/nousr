@@ -41,8 +41,11 @@
 #include <unistd.h>
 
 static int intercepting;
+extern char **_dl_argv;
+
 /* copies of certain paths and their real paths */
 static const char *env_strict;
+static const char *env_trace;
 static const char *env_tmpdir;
 static const char *env_tcbase;
 static const char *env_prjbase;
@@ -306,6 +309,14 @@ static void nousr_prepare()
 	for (i = 0; i < EV_T_NUM; i++)
 		orig_syscalls[i] = dlsym(RTLD_NEXT, syscall_names[i]);
 
+	env_trace      = getenv("NOUSR_TRACE");
+	if (env_trace && atoi(env_trace) >= 2) {
+		fprintf(stderr, "##nousr##");
+		for (i = 0; _dl_argv[i]; i++)
+			fprintf(stderr, " %s", _dl_argv[i]);
+		fprintf(stderr, "\n");
+	}
+
 	/* get some environment variables and the program's name and path */
 	env_strict     = getenv("NOUSR_STRICT");
 	env_tmpdir     = get_path_env("TMPDIR",        &tmpdir_len);
@@ -351,6 +362,13 @@ static void nousr_prepare()
 		 program_ends("-cpp") || program_ends("-g++") ||
 		 program_ends("-gcc") || program_ends("-ld")) {
 		intercepting = 1;
+	}
+
+	if (intercepting && env_trace && atoi(env_trace) == 1) {
+		fprintf(stderr, "##nousr##");
+		for (i = 0; _dl_argv[i]; i++)
+			fprintf(stderr, " %s", _dl_argv[i]);
+		fprintf(stderr, "\n");
 	}
 }
 

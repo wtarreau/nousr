@@ -25,7 +25,7 @@ could result from pre-configured paths. It always permits accesses to relative
 paths, to /dev, /tmp and $TMPDIR if set. By default it will reject accesses to
 /usr and permit everything else, but this behaviour can be configured.
 
-The utility supports three extra environment variables, one called NOUSR_TCBASE
+The utility supports four extra environment variables, one called NOUSR_TCBASE
 which specifies the path under which the toolchain is expected to be found.
 When this variable is set, programs executed from any directory starting at
 this location will be considered as part of the toolchain, instead of any tool
@@ -39,7 +39,12 @@ NOUSR_PRJBASE are set. If the variable is set (regardless of its value), no
 more access to an absolute location outside of the project and toolchain are
 premitted. It can occasionally break some build setups, especially the ones
 involving symbolic links or complex installations. It is not recommended but
-can be used for debugging.
+can be used for debugging. The fourth variable, NOUSR_TRACE, may be used to
+force called programs to have their names and arguments displayed when started.
+This can be useful to trace makefiles. This variable takes an integer value.
+The first one, 1 only enables tracing of intercepted programs. Value 2 goes a
+bit further and reports any program. Each line is reported on stderr, prefixed
+with "##nousr##" so that they are easily greppable.
 
 Examples :
 
