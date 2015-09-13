@@ -1,0 +1,96 @@
+nousr - simple guard against accidental use of /usr within loolchains
+
+Many projects are not designed to be cross-compiled, and tend to call tools
+on the local system believing to guess right where to find certain libs. Calls
+to pkg-config, glib-config, pcre-config and so on are generally wrong and cause
+much more trouble to end-users than asking them to fill an environment variable
+by hand.
+
+It is particularly difficult in face of such practices to prevent toolchains
+from accidently finding and using some libraries found on the build system,
+especially when the build system is recent and contains libraries which meet
+the dependencies set by the project.
+
+The "nousr" utility aims at solving this problem in a simple way. It is loaded
+as a shared library by each executable, it inspects a few file-system calls and
+detects when certain rules are violated, then forces the program to exit with
+an error and emits the information about what was detected.
+
+The purpose of this utility is not to be a security tool nor to be exhaustive,
+but to be simple to use and efficient enough to catch most accidental references
+to the local system. As such, it limits its inspection to programs whose name
+matches one of the tools found in a toolchain and not installed under /usr. It
+mostly focuses on accesses made to absolute paths to suspicious locations that
+could result from pre-configured paths. It always permits accesses to relative
+paths, to /dev, /tmp and $TMPDIR if set. By default it will reject accesses to
+/usr and permit everything else, but this behaviour can be configured.
+
+The utility supports three extra environment variables, one called NOUSR_TCBASE
+which specifies the path under which the toolchain is expected to be found.
+When this variable is set, programs executed from any directory starting at
+this location will be considered as part of the toolchain, instead of any tool
+outside of /usr. This can be useful when the toolchain is installed in a
+sub-directory under /usr for example. The second environment variable called
+NOUSR_PRJBASE sets the path under which the project being worked on is located.
+It allows explicit access to the files under this location even if they are
+under /usr (for example /usr/src). The third environment variable, called
+NOUSR_STRICT, forces the controls to become strict when both NOUSR_TCBASE and
+NOUSR_PRJBASE are set. If the variable is set (regardless of its value), no
+more access to an absolute location outside of the project and toolchain are
+premitted. It can occasionally break some build setups, especially the ones
+involving symbolic links or complex installations. It is not recommended but
+can be used for debugging.
+
+Examples :
+
+  joe:/project$ LD_PRELOAD=/path/to/nousr.so make world
+  FATAL: nousr: program 'i586-linux-gcc' attempted to access '/usr/include/pcre.h' using access().
+       | full path to program             : /tc/i586-linux/bin/i586-linux-gcc
+       | working directory at call        : /project/src
+       | path to project (NOUSR_PRJBASE)  : [anything not under /usr]
+       | path to toolchain (NOUSR_TCBASE) : [anything not under /usr]
+  make: *** [clean] Error 127
+  joe:/project$
+
+
+  joe:/usr/src/project$ NOUSR_PRJBASE=$PWD NOUSR_TCBASE=/usr/local/toolchain LD_PRELOAD=/path/to/nousr.so make world
+  FATAL: nousr: program 'i586-linux-gcc' attempted to access '/usr/include/pcre.h' using access().
+       | full path to program             : /usr/local/toolchain/i586-linux/bin/i586-linux-gcc
+       | working directory at call        : /usr/src/project/src
+       | path to project (NOUSR_PRJBASE)  : /usr/src/project
+       | path to toolchain (NOUSR_TCBASE) : /usr/local/toolchain
+  make: *** [clean] Error 127
+  joe:/usr/src/project$
+
+
+Points of care :
+  - only a few libc calls are intercepted, programs involving other calls will
+    not be properly intercepted, just like statically built programs. The lack
+    of errors doesn't necessarily imply there are no calls, only that they were
+    not detected. But in practice this works fine with common toolchains.
+
+  - LD_PRELOAD is dropped over sudo or any setuid binary. It is not a problem
+    since a compiler is not suppoed to be used this way.
+
+  - all configurable paths (TMPDIR, NOUSR_PRJBASE, NOUSR_TCBASE) are also
+    normalized using realpath() to properly match locations involving symlinks.
+
+  - it is generally enough to set LD_PRELOAD before working on the project, and
+    to be laxist on the optional toolchain base and project base. The purpose is
+    not to strictly detect any access outside, but to detect those that could
+    have been missed by a developer or that could result in a difference between
+    multiple build environments.
+
+  - if some system libraries are installed under /opt and it is desired that
+    they are not accessible, setting NOUSR_STRICT may help, but it is also
+    likely to strike on certain imperfectly configured toolchains.
+
+  - while the overhead is not measurable in a standard build environment, it
+    could come with a cost in programs making heavy use of open(), access() or
+    stat(), so it is not recommended to permanently set the LD_PRELOAD variable,
+    but to limit it to the build and development sessions.
+
+  - for more complex setups, other much more flexible and configurable solutions
+    exist. Nousr intends to remain simple and configuration-less. It will not
+    try to replace other properly working solutions.
+
