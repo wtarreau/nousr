@@ -79,7 +79,7 @@ const char *syscall_names[EV_T_NUM] = {
 	[EV_T_ACCESS]       = "access",
 };
 
-void *orig_syscalls[EV_T_NUM];
+static void *orig_syscalls[EV_T_NUM];
 
 static char prog_full_path[PATH_MAX];
 static char *prog_name;
