@@ -202,6 +202,22 @@ static int fail_syscall(const char *culprit, const char *path)
 	return -1;
 }
 
+/* fails a syscall called while not defined by returning exit code 127.
+ * Since it is also provides the return code for the intercepted syscalls,
+ * it's easy to disable exit() and replace it with a return -1 instead for
+ * debugging.
+ */
+static int panic(const char *culprit, const char *path)
+{
+	char cwd[PATH_MAX];
+
+	fprintf(stderr, "FATAL: nousr: program '%s' attempted to call %s('%s') with %s undefined.\n",
+		prog_name, culprit, path, culprit);
+	fprintf(stderr, "     | full path to program             : %s\n", prog_full_path);
+	exit(127);
+	return -1;
+}
+
 /** below we have the new definitions for the syscalls that we can intercept **/
 
 int open(const char *pathname, int flags, ...)
@@ -217,6 +233,9 @@ int open(const char *pathname, int flags, ...)
 
 	if (intercepting && !is_path_ok(pathname))
 		return fail_syscall(syscall, pathname);
+
+	if (!orig)
+		return panic(syscall, pathname);
 
 	return orig(pathname, flags, mode);
 }
@@ -235,6 +254,9 @@ int open64(const char *pathname, int flags, ...)
 	if (intercepting && !is_path_ok(pathname))
 		return fail_syscall(syscall, pathname);
 
+	if (!orig)
+		return panic(syscall, pathname);
+
 	return orig(pathname, flags, mode);
 }
 
@@ -245,6 +267,9 @@ int __xstat(int ver, const char *pathname, struct stat *buf)
 
 	if (intercepting && !is_path_ok(pathname))
 		return fail_syscall(syscall, pathname);
+
+	if (!orig)
+		return panic(syscall, pathname);
 
 	return orig(ver, pathname, buf);
 }
@@ -257,6 +282,9 @@ int __lxstat(int ver, const char *pathname, struct stat *buf)
 	if (intercepting && !is_path_ok(pathname))
 		return fail_syscall(syscall, pathname);
 
+	if (!orig)
+		return panic(syscall, pathname);
+
 	return orig(ver, pathname, buf);
 }
 
@@ -267,6 +295,9 @@ int access(const char *pathname, int mode)
 
 	if (intercepting && !is_path_ok(pathname))
 		return fail_syscall(syscall, pathname);
+
+	if (!orig)
+		return panic(syscall, pathname);
 
 	return orig(pathname, mode);
 }
