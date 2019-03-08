@@ -348,7 +348,7 @@ static void nousr_prepare()
 	env_trace      = getenv("NOUSR_TRACE");
 	if (env_trace && atoi(env_trace) >= 2) {
 		fprintf(stderr, "##nousr##");
-		for (i = 0; _dl_argv[i]; i++)
+		for (i = 0; _dl_argv && _dl_argv[i]; i++)
 			fprintf(stderr, " %s", _dl_argv[i]);
 		fprintf(stderr, "\n");
 	}
@@ -402,7 +402,7 @@ static void nousr_prepare()
 
 	if (intercepting && env_trace && atoi(env_trace) == 1) {
 		fprintf(stderr, "##nousr##");
-		for (i = 0; _dl_argv[i]; i++)
+		for (i = 0; _dl_argv && _dl_argv[i]; i++)
 			fprintf(stderr, " %s", _dl_argv[i]);
 		fprintf(stderr, "\n");
 	}
