@@ -192,6 +192,14 @@ static int fail_syscall(const char *culprit, const char *path)
 {
 	char cwd[PATH_MAX];
 
+	if (!stderr)
+		stderr = fdopen(2, "w");
+
+	if (!stderr) {
+		write(2, "nousr: failed call and stderr not defined\n", 26);
+		return -1;
+	}
+
 	fprintf(stderr, "FATAL: nousr: program '%s' attempted to access '%s' using %s().\n",
 		prog_name, path, culprit);
 	fprintf(stderr, "     | full path to program             : %s\n", prog_full_path);
@@ -210,6 +218,14 @@ static int fail_syscall(const char *culprit, const char *path)
 static int panic(const char *culprit, const char *path)
 {
 	char cwd[PATH_MAX];
+
+	if (!stderr)
+		stderr = fdopen(2, "w");
+
+	if (!stderr) {
+		write(2, "nousr: failed to (re)open stderr\n", 33);
+		return -1;
+	}
 
 	fprintf(stderr, "FATAL: nousr: program '%s' attempted to call %s('%s') with %s undefined.\n",
 		prog_name, culprit, path, culprit);
@@ -340,6 +356,14 @@ __attribute__((constructor))
 static void nousr_prepare()
 {
 	int i;
+
+	if (!stderr)
+		stderr = fdopen(2, "w");
+
+	if (!stderr) {
+		write(2, "nousr: failed to (re)open stderr\n", 33);
+		exit(127);
+	}
 
 	/* save original syscalls before going any further */
 	for (i = 0; i < EV_T_NUM; i++)
