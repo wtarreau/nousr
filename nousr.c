@@ -206,6 +206,7 @@ static int fail_syscall(const char *culprit, const char *path)
 
 int open(const char *pathname, int flags, ...)
 {
+	const char *syscall                 = syscall_names[EV_T_OPEN];
 	int (*orig)(const char *, int, ...) = orig_syscalls[EV_T_OPEN];
 	int mode;
 	va_list args;
@@ -215,13 +216,14 @@ int open(const char *pathname, int flags, ...)
 	va_end(args);
 
 	if (intercepting && !is_path_ok(pathname))
-		return fail_syscall("open", pathname);
+		return fail_syscall(syscall, pathname);
 
 	return orig(pathname, flags, mode);
 }
 
 int open64(const char *pathname, int flags, ...)
 {
+	const char *syscall                 = syscall_names[EV_T_OPEN64];
 	int (*orig)(const char *, int, ...) = orig_syscalls[EV_T_OPEN64];
 	int mode;
 	va_list args;
@@ -231,37 +233,40 @@ int open64(const char *pathname, int flags, ...)
 	va_end(args);
 
 	if (intercepting && !is_path_ok(pathname))
-		return fail_syscall("open64", pathname);
+		return fail_syscall(syscall, pathname);
 
 	return orig(pathname, flags, mode);
 }
 
 int __xstat(int ver, const char *pathname, struct stat *buf)
 {
+	const char *syscall                               = syscall_names[EV_T_XSTAT];
 	int (*orig)(int ver, const char *, struct stat *) = orig_syscalls[EV_T_XSTAT];
 
 	if (intercepting && !is_path_ok(pathname))
-		return fail_syscall("xstat", pathname);
+		return fail_syscall(syscall, pathname);
 
 	return orig(ver, pathname, buf);
 }
 
 int __lxstat(int ver, const char *pathname, struct stat *buf)
 {
+	const char *syscall                               = syscall_names[EV_T_LXSTAT];
 	int (*orig)(int ver, const char *, struct stat *) = orig_syscalls[EV_T_LXSTAT];
 
 	if (intercepting && !is_path_ok(pathname))
-		return fail_syscall("lxstat", pathname);
+		return fail_syscall(syscall, pathname);
 
 	return orig(ver, pathname, buf);
 }
 
 int access(const char *pathname, int mode)
 {
+	const char *syscall            = syscall_names[EV_T_ACCESS];
 	int (*orig)(const char *, int) = orig_syscalls[EV_T_ACCESS];
 
 	if (intercepting && !is_path_ok(pathname))
-		return fail_syscall("access", pathname);
+		return fail_syscall(syscall, pathname);
 
 	return orig(pathname, mode);
 }
